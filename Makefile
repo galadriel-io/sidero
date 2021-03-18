@@ -84,7 +84,7 @@ local-%: ## Builds the specified target defined in the Dockerfile using the loca
 	@$(MAKE) target-$* TARGET_ARGS="--output=type=local,dest=$(DEST) $(TARGET_ARGS)"
 
 docker-%: ## Builds the specified target defined in the Dockerfile using the docker output type. The build result will be loaded into docker.
-	@$(MAKE) target-$* TARGET_ARGS="--tag $(IMAGE):$(TAG) $(TARGET_ARGS)"
+	@$(MAKE) target-$* TARGET_ARGS="--output=type=docker --tag $(IMAGE):$(TAG) $(TARGET_ARGS)"
 
 # Code Generation
 

@@ -25,7 +25,7 @@ ENV CGO_ENABLED 0
 WORKDIR /tmp
 RUN apt-get update \
   && apt-get install -y unzip \
-  && curl -L https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protoc-3.7.1-linux-x86_64.zip -o /tmp/protoc.zip \
+  && curl -L https://github.com/protocolbuffers/protobuf/releases/download/v3.15.4/protoc-3.15.4-linux-aarch_64.zip -o /tmp/protoc.zip \
   && unzip -o /tmp/protoc.zip -d /usr/local bin/protoc \
   && unzip -o /tmp/protoc.zip -d /usr/local 'include/*' \
   && go get github.com/golang/protobuf/protoc-gen-go@v1.3
@@ -76,9 +76,9 @@ COPY --from=generate-build /src/app/metal-controller-manager/internal/api ./app/
 FROM k8s.gcr.io/hyperkube:v1.17.0 AS release-build
 RUN apt update -y \
   && apt install -y curl \
-  && curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.5.4/kustomize_v3.5.4_linux_amd64.tar.gz \
-  && tar -xf kustomize_v3.5.4_linux_amd64.tar.gz -C /usr/local/bin \
-  && rm kustomize_v3.5.4_linux_amd64.tar.gz
+  && curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv4.0.5/kustomize_v4.0.5_linux_arm64.tar.gz \
+  && tar -xf kustomize_v4.0.5_linux_arm64.tar.gz -C /usr/local/bin \
+  && rm kustomize_v4.0.5_linux_arm64.tar.gz
 COPY ./config ./config
 COPY ./templates ./templates
 COPY ./app/cluster-api-provider-sidero/config ./app/cluster-api-provider-sidero/config
@@ -103,7 +103,7 @@ COPY --from=release-build /metadata.yaml /infrastructure-sidero/${TAG}/metadata.
 COPY --from=release-build /cluster-template.yaml /infrastructure-sidero/${TAG}/cluster-template.yaml
 
 FROM base AS build-cluster-api-provider-sidero
-RUN --mount=type=cache,target=/root/.cache/go-build GOOS=linux go build -ldflags "-s -w" -o /manager ./app/cluster-api-provider-sidero
+RUN --mount=type=cache,target=/root/.cache/go-build GOARCH=arm64 GOOS=linux go build -ldflags "-s -w" -o /manager ./app/cluster-api-provider-sidero
 RUN chmod +x /manager
 
 ## TODO(rsmitty): make bmc pkg and move to talos-systems image
@@ -117,7 +117,7 @@ COPY --from=build-cluster-api-provider-sidero /manager /manager
 ENTRYPOINT [ "/manager" ]
 
 FROM base AS build-metal-controller-manager
-RUN --mount=type=cache,target=/root/.cache/go-build GOOS=linux go build -ldflags "-s -w" -o /manager ./app/metal-controller-manager
+RUN --mount=type=cache,target=/root/.cache/go-build GOARCH=arm64 GOOS=linux go build -ldflags "-s -w" -o /manager ./app/metal-controller-manager
 RUN chmod +x /manager
 
 FROM alpine:3.11 AS assets
@@ -126,7 +126,7 @@ RUN curl -s -o /undionly.kpxe http://boot.ipxe.org/undionly.kpxe
 RUN curl -s -o /ipxe.efi http://boot.ipxe.org/ipxe.efi
 
 FROM base AS agent-build
-RUN --mount=type=cache,target=/root/.cache/go-build GOOS=linux go build -ldflags "-s -w" -o /agent ./app/metal-controller-manager/cmd/agent
+RUN --mount=type=cache,target=/root/.cache/go-build GOARCH=arm64 GOOS=linux go build -ldflags "-s -w" -o /agent ./app/metal-controller-manager/cmd/agent
 RUN chmod +x /agent
 
 FROM scratch AS agent
@@ -163,7 +163,7 @@ COPY --from=build-metal-controller-manager /manager /manager
 ENTRYPOINT [ "/manager" ]
 
 FROM base AS build-metal-metadata-server
-RUN --mount=type=cache,target=/root/.cache/go-build GOOS=linux go build -ldflags "-s -w" -o /metal-metadata-server ./app/metal-metadata-server
+RUN --mount=type=cache,target=/root/.cache/go-build GOARCH=arm64 GOOS=linux go build -ldflags "-s -w" -o /metal-metadata-server ./app/metal-metadata-server
 RUN chmod +x /metal-metadata-server
 
 FROM scratch AS metal-metadata-server
